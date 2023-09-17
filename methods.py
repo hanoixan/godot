@@ -796,7 +796,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
             # project. Do not modify without knowing what you are doing.
             PLATFORMS = ["Win32", "x64"]
             PLATFORM_IDS = ["x86_32", "x86_64"]
-            CONFIGURATIONS = ["editor", "template_release", "template_debug"]
+            CONFIGURATIONS = ["editor", "template_release", "template_debug", "embed_debug"]
             DEV_SUFFIX = ".dev" if env["dev_build"] else ""
 
             @staticmethod

@@ -218,7 +218,16 @@ public:
 	virtual Error shell_open(String p_uri) override;
 	virtual Error shell_show_in_file_manager(String p_path, bool p_open_folder) override;
 
+#ifndef EMBED_ENABLED
+private:
+#endif
+	bool pre_run_frames();
+	void post_run_frames();
+	bool run_frame();
+#ifndef EMBED_ENABLED
+public:
 	void run();
+#endif
 
 	virtual bool _check_internal_feature_support(const String &p_feature) override;
 

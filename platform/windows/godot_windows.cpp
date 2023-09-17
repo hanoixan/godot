@@ -149,6 +149,112 @@ char *wc_to_utf8(const wchar_t *wc) {
 	return ubuf;
 }
 
+#ifdef EMBED_ENABLED
+
+BOOL WINAPI DllMain(
+	HINSTANCE hinstDLL,  // handle to DLL module
+	DWORD fdwReason,     // reason for calling function
+	LPVOID lpReserved )  // reserved
+{
+
+
+	// TODO: Add in crash handler exception, Startup (setup and start), Update (run one tick of the main_loop), Shutdown (cleanup)
+
+
+	// Perform actions based on the reason for calling.
+	switch (fdwReason)
+	{
+	case DLL_PROCESS_ATTACH:
+		// Initialize once for each new process.
+		// Return FALSE to fail DLL load.
+		break;
+
+	case DLL_THREAD_ATTACH:
+		// Do thread-specific initialization.
+		break;
+
+	case DLL_THREAD_DETACH:
+		// Do thread-specific cleanup.
+		break;
+
+	case DLL_PROCESS_DETACH:
+		// Perform any necessary cleanup.
+		break;
+	}
+	return TRUE;  // Successful DLL_PROCESS_ATTACH.
+}
+
+#define GODOT_EMBED_EXPORT extern "C" __declspec(dllexport)
+#define GODOT_EMBED_CONVENTION __stdcall
+//#define GODOT_EMBED_CONVENTION __cdecl
+
+typedef void* GodotEmbedContextHandle;
+
+//#include "godot_windows_dll_imports.h"
+
+struct GodotEmbedContext
+{
+	GodotEmbedContext() :
+		os(nullptr)
+	{
+	}
+
+	OS_Windows os;
+};
+
+GODOT_EMBED_EXPORT void* GODOT_EMBED_CONVENTION godot_embed_startup(const char* pack_path)
+{
+
+	// Must happen before any other code here.
+	GodotEmbedContext* context = memnew(GodotEmbedContext());
+
+	char argument_strings[2][255];
+	strcpy_s(argument_strings[0], "--main-pack");
+	strcpy_s(argument_strings[1], pack_path);
+	char* arguments[] = { argument_strings[0], argument_strings[1] };
+
+	Error err = Main::setup("godot_embed", 2, arguments);
+
+	if (err != OK) {
+		return nullptr;
+	}
+
+	if (Main::start()) {
+		if (!context->os.pre_run_frames()) {
+			memdelete(context);
+			return nullptr;
+		}
+
+		return static_cast<GodotEmbedContextHandle>(context);
+	}
+
+	memdelete(context);
+	return nullptr;
+}
+
+GODOT_EMBED_EXPORT int GODOT_EMBED_CONVENTION godot_embed_pump(GodotEmbedContextHandle Handle)
+{
+	if (GodotEmbedContext* context = static_cast<GodotEmbedContext*>(Handle)) {
+		return context->os.run_frame() ? EXIT_FAILURE : EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
+}
+
+GODOT_EMBED_EXPORT int GODOT_EMBED_CONVENTION godot_embed_shutdown(GodotEmbedContextHandle Handle)
+{
+	if (GodotEmbedContext* context = static_cast<GodotEmbedContext*>(Handle))
+	{
+		context->os.post_run_frames();
+
+		Main::cleanup();
+
+		return context->os.get_exit_code();
+	}
+	return EXIT_FAILURE;
+}
+
+#else
+
 int widechar_main(int argc, wchar_t **argv) {
 	OS_Windows os(nullptr);
 
@@ -230,3 +336,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	godot_hinstance = hInstance;
 	return main(0, nullptr);
 }
+#endif

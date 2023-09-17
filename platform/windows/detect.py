@@ -174,7 +174,7 @@ def get_opts():
             "Targeted Windows version, >= 0x0601 (Windows 7)",
             "0x0601",
         ),
-        EnumVariable("windows_subsystem", "Windows subsystem", "gui", ("gui", "console")),
+        EnumVariable("windows_subsystem", "Windows subsystem", "gui", ("gui", "console", "none")),
         (
             "msvc_version",
             "MSVC version to use. Ignored if VCINSTALLDIR is set in shell env.",
@@ -336,14 +336,19 @@ def configure_msvc(env, vcvars_msvc_config):
     ## Build type
 
     # TODO: Re-evaluate the need for this / streamline with common config.
-    if env["target"] == "template_release":
-        env.Append(LINKFLAGS=["/ENTRY:mainCRTStartup"])
-
-    if env["windows_subsystem"] == "gui":
-        env.Append(LINKFLAGS=["/SUBSYSTEM:WINDOWS"])
+    if env["target"] in ["embed_debug"]:
+        env.Append(LINKFLAGS=["/DLL"])
+        env.Append(LINKFLAGS=["/ENTRY:_DllMainCRTStartup"])
+        env.AppendUnique(CCFLAGS=["/LD"])
     else:
-        env.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE"])
-        env.AppendUnique(CPPDEFINES=["WINDOWS_SUBSYSTEM_CONSOLE"])
+        if env["target"] == "template_release":
+            env.Append(LINKFLAGS=["/ENTRY:mainCRTStartup"])
+
+        if env["windows_subsystem"] == "gui":
+            env.Append(LINKFLAGS=["/SUBSYSTEM:WINDOWS"])
+        else:
+            env.Append(LINKFLAGS=["/SUBSYSTEM:CONSOLE"])
+            env.AppendUnique(CPPDEFINES=["WINDOWS_SUBSYSTEM_CONSOLE"])
 
     ## Compile/link flags
 
@@ -424,14 +429,15 @@ def configure_msvc(env, vcvars_msvc_config):
     if env.debug_features:
         LIBS += ["psapi", "dbghelp"]
 
-    if env["vulkan"]:
-        env.AppendUnique(CPPDEFINES=["VULKAN_ENABLED"])
-        if not env["use_volk"]:
-            LIBS += ["vulkan"]
+    if True: #$$ env["target"] not in ["embed_debug"]:
+        if env["vulkan"]:
+            env.AppendUnique(CPPDEFINES=["VULKAN_ENABLED"])
+            if not env["use_volk"]:
+                LIBS += ["vulkan"]
 
-    if env["opengl3"]:
-        env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
-        LIBS += ["opengl32"]
+        if env["opengl3"]:
+            env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
+            LIBS += ["opengl32"]
 
     env.Append(LINKFLAGS=[p + env["LIBSUFFIX"] for p in LIBS])
 
@@ -607,14 +613,15 @@ def configure_mingw(env):
     if env.debug_features:
         env.Append(LIBS=["psapi", "dbghelp"])
 
-    if env["vulkan"]:
-        env.Append(CPPDEFINES=["VULKAN_ENABLED"])
-        if not env["use_volk"]:
-            env.Append(LIBS=["vulkan"])
+    if True: #$$env["target"] not in ["embed_debug"]:
+        if env["vulkan"]:
+            env.Append(CPPDEFINES=["VULKAN_ENABLED"])
+            if not env["use_volk"]:
+                env.Append(LIBS=["vulkan"])
 
-    if env["opengl3"]:
-        env.Append(CPPDEFINES=["GLES3_ENABLED"])
-        env.Append(LIBS=["opengl32"])
+        if env["opengl3"]:
+            env.Append(CPPDEFINES=["GLES3_ENABLED"])
+            env.Append(LIBS=["opengl32"])
 
     env.Append(CPPDEFINES=["MINGW_ENABLED", ("MINGW_HAS_SECURE_API", 1)])
 

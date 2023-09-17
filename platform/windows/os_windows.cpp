@@ -1462,22 +1462,50 @@ String OS_Windows::get_processor_name() const {
 	}
 }
 
+bool OS_Windows::pre_run_frames() {
+	if (!main_loop) {
+		return false;
+	}
+
+	main_loop->initialize();
+	return true;
+}
+
+void OS_Windows::post_run_frames() {
+	if (!main_loop) {
+		return;
+	}
+
+	main_loop->finalize();
+}
+
+bool OS_Windows::run_frame() {
+	if (!main_loop) {
+		return false;
+	}
+
+	DisplayServer::get_singleton()->process_events(); // get rid of pending events
+
+	return Main::iteration();
+}
+
+#ifndef EMBED_ENABLED
 void OS_Windows::run() {
 	if (!main_loop) {
 		return;
 	}
 
-	main_loop->initialize();
+	pre_run_frames();
 
 	while (true) {
-		DisplayServer::get_singleton()->process_events(); // get rid of pending events
-		if (Main::iteration()) {
+		if (run_frame()) {
 			break;
 		}
 	}
 
-	main_loop->finalize();
+	post_run_frames();
 }
+#endif
 
 MainLoop *OS_Windows::get_main_loop() const {
 	return main_loop;
