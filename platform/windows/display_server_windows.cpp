@@ -4176,7 +4176,14 @@ DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, 
 
 		wd.hWnd = CreateWindowExW(
 				dwExStyle,
-				L"Engine", L"",
+
+#ifdef EMBED_ENABLED
+				L"EmbedEngine",
+#else
+				L"Engine",
+#endif
+				L"",
+
 				dwStyle,
 				//				(GetSystemMetrics(SM_CXSCREEN) - WindowRect.right) / 2,
 				//				(GetSystemMetrics(SM_CYSCREEN) - WindowRect.bottom) / 2,
@@ -4498,7 +4505,12 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 	wc.hCursor = nullptr;
 	wc.hbrBackground = nullptr;
 	wc.lpszMenuName = nullptr;
-	wc.lpszClassName = L"Engine";
+	wc.lpszClassName =
+#ifdef EMBED_ENABLED
+		L"EmbedEngine";
+#else
+		L"Engine";
+#endif
 
 	if (!RegisterClassExW(&wc)) {
 		MessageBoxW(nullptr, L"Failed To Register The Window Class.", L"ERROR", MB_OK | MB_ICONEXCLAMATION);

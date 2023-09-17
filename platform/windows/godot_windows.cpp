@@ -35,6 +35,10 @@
 #include <locale.h>
 #include <stdio.h>
 
+#ifdef EMBED_ENABLED
+#include <filesystem>
+#endif
+
 // For export templates, add a section; the exporter will patch it to enclose
 // the data appended to the executable (bundled PCK)
 #ifndef TOOLS_ENABLED
@@ -204,16 +208,22 @@ struct GodotEmbedContext
 
 GODOT_EMBED_EXPORT void* GODOT_EMBED_CONVENTION godot_embed_startup(const char* pack_path)
 {
+	// Set working directory to that of pack_path
+	std::filesystem::current_path(std::filesystem::path(pack_path).parent_path());
 
 	// Must happen before any other code here.
 	GodotEmbedContext* context = memnew(GodotEmbedContext());
 
-	char argument_strings[2][255];
+	char argument_strings[4][255];
 	strcpy_s(argument_strings[0], "--main-pack");
 	strcpy_s(argument_strings[1], pack_path);
-	char* arguments[] = { argument_strings[0], argument_strings[1] };
 
+	char* arguments[] = { argument_strings[0], argument_strings[1] };
 	Error err = Main::setup("godot_embed", 2, arguments);
+	//strcpy_s(argument_strings[2], "--rendering-driver");
+	//strcpy_s(argument_strings[3], "opengl3");
+	//char* arguments[] = { argument_strings[0], argument_strings[1], argument_strings[2], argument_strings[3]};
+	//Error err = Main::setup("godot_embed", 4, arguments);
 
 	if (err != OK) {
 		return nullptr;
