@@ -429,12 +429,12 @@ def configure_msvc(env, vcvars_msvc_config):
     if env.debug_features:
         LIBS += ["psapi", "dbghelp"]
 
-    if True: #$$ env["target"] not in ["embed_debug"]:
-        if env["vulkan"]:
-            env.AppendUnique(CPPDEFINES=["VULKAN_ENABLED"])
-            if not env["use_volk"]:
-                LIBS += ["vulkan"]
+    if env["vulkan"]:
+        env.AppendUnique(CPPDEFINES=["VULKAN_ENABLED"])
+        if not env["use_volk"]:
+            LIBS += ["vulkan"]
 
+    if env["target"] not in ["embed_debug"]:
         if env["opengl3"]:
             env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
             LIBS += ["opengl32"]
@@ -613,12 +613,12 @@ def configure_mingw(env):
     if env.debug_features:
         env.Append(LIBS=["psapi", "dbghelp"])
 
-    if True: #$$env["target"] not in ["embed_debug"]:
-        if env["vulkan"]:
-            env.Append(CPPDEFINES=["VULKAN_ENABLED"])
-            if not env["use_volk"]:
-                env.Append(LIBS=["vulkan"])
+    if env["vulkan"]:
+        env.Append(CPPDEFINES=["VULKAN_ENABLED"])
+        if not env["use_volk"]:
+            env.Append(LIBS=["vulkan"])
 
+    if env["target"] not in ["embed_debug"]:
         if env["opengl3"]:
             env.Append(CPPDEFINES=["GLES3_ENABLED"])
             env.Append(LIBS=["opengl32"])

@@ -119,6 +119,10 @@ class OS_Windows : public OS {
 	ErrorHandlerList error_handlers;
 #endif
 
+#ifdef EMBED_ENABLED
+	HWND host_window_handle;
+#endif
+
 	HWND main_window;
 
 	IDWriteFactory *dwrite_factory = nullptr;
@@ -238,6 +242,11 @@ public:
 	virtual Error move_to_trash(const String &p_path) override;
 
 	virtual String get_system_ca_certificates() override;
+
+#ifdef EMBED_ENABLED
+	void set_host_window_handle(HWND hWnd) { host_window_handle = hWnd; }
+	HWND get_host_window_handle() { return host_window_handle; }
+#endif
 
 	void set_main_window(HWND p_main_window) { main_window = p_main_window; }
 

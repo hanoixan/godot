@@ -434,6 +434,7 @@ class DisplayServerWindows : public DisplayServer {
 	uint64_t time_since_popup = 0;
 	Ref<Image> icon;
 
+	WindowID _create_window_from_handle(HWND hWnd, VSyncMode p_vsync_mode, const Rect2i& p_rect);
 	WindowID _create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect);
 	WindowID window_id_counter = MAIN_WINDOW_ID;
 	RBMap<WindowID, WindowData> windows;

@@ -206,13 +206,15 @@ struct GodotEmbedContext
 	OS_Windows os;
 };
 
-GODOT_EMBED_EXPORT void* GODOT_EMBED_CONVENTION godot_embed_startup(const char* pack_path)
+GODOT_EMBED_EXPORT void* GODOT_EMBED_CONVENTION godot_embed_startup(const char* pack_path, HWND window_handle)
 {
 	// Set working directory to that of pack_path
-	std::filesystem::current_path(std::filesystem::path(pack_path).parent_path());
+	//std::filesystem::current_path(std::filesystem::path(pack_path).parent_path());
 
 	// Must happen before any other code here.
 	GodotEmbedContext* context = memnew(GodotEmbedContext());
+
+	context->os.set_host_window_handle(window_handle);
 
 	char argument_strings[4][255];
 	strcpy_s(argument_strings[0], "--main-pack");

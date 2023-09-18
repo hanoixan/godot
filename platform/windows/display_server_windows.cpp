@@ -4121,6 +4121,100 @@ void DisplayServerWindows::_update_tablet_ctx(const String &p_old_driver, const 
 	}
 }
 
+// SED: TODO: Refactor for DRY
+DisplayServer::WindowID DisplayServerWindows::_create_window_from_handle(HWND hWnd, VSyncMode p_vsync_mode, const Rect2i& p_rect) {
+	RECT WindowRect;
+	WindowRect.left = p_rect.position.x;
+	WindowRect.right = p_rect.position.x + p_rect.size.x;
+	WindowRect.top = p_rect.position.y;
+	WindowRect.bottom = p_rect.position.y + p_rect.size.y;
+
+	WindowID id = window_id_counter;
+	{
+		WindowData& wd = windows[id];
+		wd.hWnd = hWnd;
+		wd.fullscreen = false;
+		wd.multiwindow_fs = false;
+		wd.pre_fs_valid = true;
+
+#ifdef VULKAN_ENABLED
+		if (context_vulkan) {
+			if (context_vulkan->window_create(id, p_vsync_mode, wd.hWnd, hInstance, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top) != OK) {
+				memdelete(context_vulkan);
+				context_vulkan = nullptr;
+				windows.erase(id);
+				ERR_FAIL_V_MSG(INVALID_WINDOW_ID, "Failed to create Vulkan Window.");
+			}
+			wd.context_created = true;
+		}
+#endif
+
+#ifdef GLES3_ENABLED
+		if (gl_manager) {
+			if (gl_manager->window_create(id, wd.hWnd, hInstance, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top) != OK) {
+				memdelete(gl_manager);
+				gl_manager = nullptr;
+				windows.erase(id);
+				ERR_FAIL_V_MSG(INVALID_WINDOW_ID, "Failed to create an OpenGL window.");
+			}
+			window_set_vsync_mode(p_vsync_mode, id);
+		}
+#endif
+
+		RegisterTouchWindow(wd.hWnd, 0);
+		DragAcceptFiles(wd.hWnd, true);
+
+		if ((tablet_get_current_driver() == "wintab") && wintab_available) {
+			wintab_WTInfo(WTI_DEFSYSCTX, 0, &wd.wtlc);
+			wd.wtlc.lcOptions |= CXO_MESSAGES;
+			wd.wtlc.lcPktData = PK_STATUS | PK_NORMAL_PRESSURE | PK_TANGENT_PRESSURE | PK_ORIENTATION;
+			wd.wtlc.lcMoveMask = PK_STATUS | PK_NORMAL_PRESSURE | PK_TANGENT_PRESSURE;
+			wd.wtlc.lcPktMode = 0;
+			wd.wtlc.lcOutOrgX = 0;
+			wd.wtlc.lcOutExtX = wd.wtlc.lcInExtX;
+			wd.wtlc.lcOutOrgY = 0;
+			wd.wtlc.lcOutExtY = -wd.wtlc.lcInExtY;
+			wd.wtctx = wintab_WTOpen(wd.hWnd, &wd.wtlc, false);
+			if (wd.wtctx) {
+				wintab_WTEnable(wd.wtctx, true);
+				AXIS pressure;
+				if (wintab_WTInfo(WTI_DEVICES + wd.wtlc.lcDevice, DVC_NPRESSURE, &pressure)) {
+					wd.min_pressure = int(pressure.axMin);
+					wd.max_pressure = int(pressure.axMax);
+				}
+				AXIS orientation[3];
+				if (wintab_WTInfo(WTI_DEVICES + wd.wtlc.lcDevice, DVC_ORIENTATION, &orientation)) {
+					wd.tilt_supported = orientation[0].axResolution && orientation[1].axResolution;
+				}
+			}
+			else {
+				print_verbose("WinTab context creation failed.");
+			}
+		}
+		else {
+			wd.wtctx = 0;
+		}
+
+		wd.last_pressure = 0;
+		wd.last_pressure_update = 0;
+		wd.last_tilt = Vector2();
+
+		// IME.
+		wd.im_himc = ImmGetContext(wd.hWnd);
+		ImmAssociateContext(wd.hWnd, (HIMC)0);
+
+		wd.im_position = Vector2();
+
+		wd.last_pos = p_rect.position;
+		wd.width = p_rect.size.width;
+		wd.height = p_rect.size.height;
+
+		window_id_counter++;
+	}
+
+	return id;
+}
+
 DisplayServer::WindowID DisplayServerWindows::_create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect) {
 	DWORD dwExStyle;
 	DWORD dwStyle;
@@ -4562,7 +4656,23 @@ DisplayServerWindows::DisplayServerWindows(const String &p_rendering_driver, Win
 		window_position = screen_get_position(p_screen) + (screen_get_size(p_screen) - p_resolution) / 2;
 	}
 
-	WindowID main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution));
+	WindowID main_window = INVALID_WINDOW_ID;
+
+#ifdef EMBED_ENABLED
+	if (HWND window_handle = static_cast<OS_Windows*>(OS::get_singleton())->get_host_window_handle()) {
+		RECT window_rect;
+		if (GetWindowRect(window_handle, &window_rect)) {
+			main_window = _create_window_from_handle(window_handle, p_vsync_mode, Rect2i(
+				Vector2i(), Vector2i(window_rect.right - window_rect.left, window_rect.bottom - window_rect.top)));
+		}
+	}
+	// SED: TODO: For now fallback on creating a window if we didn't get a HWND passed in
+#endif
+
+	if (main_window == INVALID_WINDOW_ID) {
+		main_window = _create_window(p_mode, p_vsync_mode, p_flags, Rect2i(window_position, p_resolution));
+	}
+
 	ERR_FAIL_COND_MSG(main_window == INVALID_WINDOW_ID, "Failed to create main window.");
 
 	joypad = new JoypadWindows(&windows[MAIN_WINDOW_ID].hWnd);

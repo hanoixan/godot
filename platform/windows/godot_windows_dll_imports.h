@@ -1,6 +1,8 @@
 #ifndef GODOT_WINDOWS_DLL_IMPORTS_H
 #define GODOT_WINDOWS_DLL_IMPORTS_H
 
+#include <windows.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -10,7 +12,7 @@ extern "C" {
 
 typedef void* GodotEmbedContextHandle;
 
-GODOT_EMBED_IMPORT GodotEmbedContextHandle godot_embed_startup(const char* pack_path);
+GODOT_EMBED_IMPORT GodotEmbedContextHandle godot_embed_startup(const char* pack_path, HWND window_handle);
 GODOT_EMBED_IMPORT int godot_embed_pump(GodotEmbedContextHandle Handle);
 GODOT_EMBED_IMPORT int godot_embed_shutdown(GodotEmbedContextHandle Handle);
 
