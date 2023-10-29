@@ -336,10 +336,17 @@ def configure_msvc(env, vcvars_msvc_config):
     ## Build type
 
     # TODO: Re-evaluate the need for this / streamline with common config.
-    if env["target"] in ["embed_debug"]:
+    if env["target"] in ["embed_shared_debug", "embed_shared_release"]:
         env.Append(LINKFLAGS=["/DLL"])
         env.Append(LINKFLAGS=["/ENTRY:_DllMainCRTStartup"])
-        env.AppendUnique(CCFLAGS=["/LD"])
+        if env["target"] == "embed_shared_debug":
+            env.AppendUnique(CCFLAGS=["/LDd"])
+        else:
+            env.AppendUnique(CCFLAGS=["/LD"])
+    elif env["target"] in ["embed_static_debug", "embed_static_release"]:
+        # no options required for static lib
+        #TODO:SED: Add special command to combine all .libs into a single .lib
+        pass        
     else:
         if env["target"] == "template_release":
             env.Append(LINKFLAGS=["/ENTRY:mainCRTStartup"])
@@ -434,11 +441,13 @@ def configure_msvc(env, vcvars_msvc_config):
         if not env["use_volk"]:
             LIBS += ["vulkan"]
 
-    if env["target"] not in ["embed_debug"]:
-        if env["opengl3"]:
-            env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
-            LIBS += ["opengl32"]
+    #SED: Is there a good reason to remove OpenGL from this?
+    #if env["target"] not in ["embed_shared_debug", "embed_shared_release", "embed_static_debug", "embed_static_release"]:
+    if env["opengl3"]:
+        env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
+        LIBS += ["opengl32"]
 
+    #TODO:SED: Add special command to combine all .libs into a single .lib for embed_static_ variants.    
     env.Append(LINKFLAGS=[p + env["LIBSUFFIX"] for p in LIBS])
 
     if vcvars_msvc_config:
@@ -495,7 +504,7 @@ def configure_mingw(env):
         env["use_llvm"] = False
 
     # TODO: Re-evaluate the need for this / streamline with common config.
-    if env["target"] == "template_release":
+    if env["target"] in ["template_release", "embed_shared_release", "embed_static_release"]:
         env.Append(CCFLAGS=["-msse2"])
     elif env.dev_build:
         # Allow big objects. It's supposed not to have drawbacks but seems to break
@@ -618,10 +627,11 @@ def configure_mingw(env):
         if not env["use_volk"]:
             env.Append(LIBS=["vulkan"])
 
-    if env["target"] not in ["embed_debug"]:
-        if env["opengl3"]:
-            env.Append(CPPDEFINES=["GLES3_ENABLED"])
-            env.Append(LIBS=["opengl32"])
+    #!SED: Why remove opengl?
+    #if env["target"] not in ["embed_static_debug"]:
+    if env["opengl3"]:
+        env.Append(CPPDEFINES=["GLES3_ENABLED"])
+        env.Append(LIBS=["opengl32"])
 
     env.Append(CPPDEFINES=["MINGW_ENABLED", ("MINGW_HAS_SECURE_API", 1)])
 

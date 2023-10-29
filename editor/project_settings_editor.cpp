@@ -282,7 +282,6 @@ void ProjectSettingsEditor::_add_feature_overrides() {
 	presets.insert("editor");
 	presets.insert("template_debug");
 	presets.insert("template_release");
-	presets.insert("embed_debug");
 	presets.insert("debug");
 	presets.insert("release");
 	presets.insert("template");

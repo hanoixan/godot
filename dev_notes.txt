@@ -1,0 +1,24 @@
+Building
+
+scons -c
+scons platform=windows arch=x86_64 dev_build=yes debug_symbols=yes target=embed_shared_debug
+
+Important Scons files
+	SConstruct
+	SCsub
+	methods.py
+	detect.py
+
+TODO:
+Trojot
+x remove copyup and let other projects copydown
+! compile as static .lib
+	Can't do this yet, since scons doesn't know how to merge .libs into a single .lib
+* commit and build from judot
+
+Judot
+* Get OpenGL example working
+* Expose HWND
+* Link with Trojot
+* Drive draw with Judot
+* Detect KB and mouse in Trojot through Judot

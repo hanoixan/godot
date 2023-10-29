@@ -171,7 +171,7 @@ opts = Variables(customs, ARGUMENTS)
 # Target build options
 opts.Add("platform", "Target platform (%s)" % ("|".join(platform_list),), "")
 opts.Add("p", "Platform (alias for 'platform')", "")
-opts.Add(EnumVariable("target", "Compilation target", "editor", ("editor", "template_release", "template_debug", "embed_debug")))
+opts.Add(EnumVariable("target", "Compilation target", "editor", ("editor", "template_release", "template_debug", "embed_shared_release", "embed_shared_debug", "embed_static_release", "embed_static_debug")))
 opts.Add(EnumVariable("arch", "CPU architecture", "auto", ["auto"] + architectures, architecture_aliases))
 opts.Add(BoolVariable("dev_build", "Developer build with dev-only debugging code (DEV_ENABLED)", False))
 opts.Add(
@@ -410,8 +410,7 @@ env_base.platform_apis = platform_apis
 
 env_base.editor_build = env_base["target"] == "editor"
 env_base.dev_build = env_base["dev_build"]
-# TODO: Add "embed_release" everywhere embed_debug is with proper flags
-env_base.debug_features = env_base["target"] in ["editor", "template_debug", "embed_debug"]
+env_base.debug_features = env_base["target"] in ["editor", "template_debug", "embed_shared_debug", "embed_static_debug"]
 
 if env_base.dev_build:
     opt_level = "none"
@@ -426,7 +425,7 @@ env_base["debug_symbols"] = methods.get_cmdline_bool("debug_symbols", env_base.d
 if env_base.editor_build:
     env_base.Append(CPPDEFINES=["TOOLS_ENABLED"])
 
-if env_base["target"] in ["embed_debug"]:
+if env_base["target"] in ["embed_shared_debug", "embed_shared_release", "embed_static_release", "embed_static_debug"]:
     env_base.Append(CPPDEFINES=["EMBED_ENABLED"])
 
 if env_base.debug_features:
@@ -1019,12 +1018,9 @@ if "env" in locals():
     # once we start requiring SCons 4.0 as min version.
     methods.dump(env)
 
-def exit_tasks():
-    print("Copying up files.")
-    subprocess.call("copyup.bat")
-
+def print_elapsed_time():
     elapsed_time_sec = round(time.time() - time_at_start, 3)
     time_ms = round((elapsed_time_sec % 1) * 1000)
     print("[Time elapsed: {}.{:03}]".format(time.strftime("%H:%M:%S", time.gmtime(elapsed_time_sec)), time_ms))
 
-atexit.register(exit_tasks)
+atexit.register(print_elapsed_time)

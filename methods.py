@@ -130,7 +130,7 @@ def disable_warnings(self):
 
 def force_optimization_on_debug(self):
     # 'self' is the environment
-    if self["target"] == "template_release":
+    if self["target"] in ["template_release", "embed_shared_release", "embed_static_release"]:
         return
 
     if self.msvc:
@@ -796,7 +796,7 @@ def generate_vs_project(env, original_args, project_name="godot"):
             # project. Do not modify without knowing what you are doing.
             PLATFORMS = ["Win32", "x64"]
             PLATFORM_IDS = ["x86_32", "x86_64"]
-            CONFIGURATIONS = ["editor", "template_release", "template_debug", "embed_debug"]
+            CONFIGURATIONS = ["editor", "template_release", "template_debug", "embed_shared_release", "embed_shared_debug", "embed_static_release", "embed_static_debug"]
             DEV_SUFFIX = ".dev" if env["dev_build"] else ""
 
             @staticmethod
@@ -935,12 +935,10 @@ def add_shared_library(env, name, sources, **args):
     env.NoCache(library)
     return library
 
-
 def add_library(env, name, sources, **args):
     library = env.Library(name, sources, **args)
     env.NoCache(library)
     return library
-
 
 def add_program(env, name, sources, **args):
     program = env.Program(name, sources, **args)

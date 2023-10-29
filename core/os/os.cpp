@@ -395,7 +395,7 @@ bool OS::has_feature(const String &p_feature) {
 		return true;
 	}
 #ifdef DEBUG_ENABLED
-	if (p_feature == "template_debug" || p_feature == "embed_debug") {
+	if (p_feature == "template_debug") {
 		return true;
 	}
 #else

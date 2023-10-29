@@ -29,8 +29,12 @@ res_obj = env.RES(res_target, res_file)
 
 #TODO: Differentiate prog from a new shlib variable
 prog = None
-if env["target"] in ["embed_debug"]:
+if env["target"] in ["embed_shared_debug", "embed_shared_release"]:
     prog = env.add_shared_library("#bin/godot", common_win + res_obj, SHLIBSUFFIX=env["SHLIBSUFFIX"])
+elif env["target"] in ["embed_static_debug", "embed_static_release"]:
+    #SED: TODO: This will not combine all libraries into a single library. That still has to be done
+    # by the host project.
+    prog = env.add_library("#bin/godot", common_win + res_obj, LIBSUFFIX=env["LIBSUFFIX"])    
 else:
     prog = env.add_program("#bin/godot", common_win + res_obj, PROGSUFFIX=env["PROGSUFFIX"])
 
